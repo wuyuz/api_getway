@@ -1,4 +1,4 @@
-## lua介绍初级
+lua介绍初级
 
 
 
@@ -356,19 +356,493 @@ function foo() end 等价于 foo = function()  end
 
   lua函数允许返回多个值，返回多个值时用逗号隔开
 
-  ```
+  ```lua
   local function init()
   	return 1,"lua"
   end
   
   local x, y = init();
   print(x,y)
+  
+  local h, z, g = init(),2 -- 注意当lua中赋值时函数后面还有表达式时不会解构，也就是说h会取init()返回的第一个值
+  print(h,z,g)  -- 1,2,nil
+  
+  local h1, z1, g1 = 2,init()  -- 当函数后没有表达式时是可以解构的
+  print(h1,z1,g1)  -- 2，1，lua
+  
+  local h1, z1, g1 = 2,(init())  -- 使用括号取第一个返回值，不解构
+  print(h1,z1,g1)  -- 2，1，nil
   ```
 
   函数返回值的规则：
 
   - 若返回值个数大于接受变量个数，多余的返回值将会被忽略
   - 若小于接受的个数，默认赋值为nil
+  - 如果你确保只取函数返回值的第一个值，可以使用括号运算符
+
+
+
+#### table 表
+
+​	table类型实现了一种抽象的“关联数组”。即可用作数组，也可用作map。（lua中没有数组和map，都是table这个类型实现）
+
+- 初始化表
+
+  ```
+  mytable = {}
+  ```
+
+- 指定值
+
+  ```
+  mytable[1] = "lua"
+  mytable["k1"] = "v1"
+  ```
+
+- 移除引用
+
+  ```lua
+  mytable = nil  -- lua垃圾回收会释放内存，其实是移除了内存的引用，lua会自动回收没有引用的数据
+  ```
+
+- 实例
+
+  ```lua
+  -- 先初始化，后赋值
+  mytable = {}
+  mytable[1] = "lua"
+  mytable["k1"] = "v1"
+  print(mytable,mytable[2],mytable[1],mytable['k1']) -- table: 0x41f6cc78	nil	lua	v1
+  
+  --------------------------------------------------------
+  -- 初始化时赋值数组
+  mytable1 = {1,2,4,5,6}  -- 类似于数组
+  print(mytable1,mytable1[1]) -- 注意：lua中的数组索引从1开始不是0； table: 0x416edd28	1
+  mytable2 = {"a","b","c"}
+  print(mytable2[2])  -- b
+  -- 修改数组
+  mytable2[3]='x'
+  print(mytable2[3])
+  
+  --------------------------------------------------------
+  -- 初始化时赋值字典
+  mytable3 = {k1="wang",k2="Li"} -- 在定义map时，key不用引号
+  print(mytable3["k2"])   -- 在访问key时需要引号
+  -- 修改值
+  mytable3["k2"] = "xing"
+  print(mytable3["k2"])
+  
+  --------------------------------------------------------
+  -- 数组和map结合状态下
+  mytable4 = {"a",key1="v2","b",k2 ="v3"}
+  --注意，我们访问b时，是数组的下标2
+  print(mytable4[1],mytable4["key1"],mytable4[2]) -- a, v2, b
+  ```
+
+  table是内存的引用
+
+  ```lua
+  -- map内存引用
+  mytable6 = {k1="wang",k2="Li"} -- 在定义map时，key不用引号
+  mytable7 = mytable6
+  mytable6["k1"] = '666'
+  print(mytable7['k1']) --666
+  ```
+
+  ![1583160431683](D:\知识点复习\api网关\1583160431683.png)
+
+#### Lua的运算符
+
+- 计算运算符实例
+
+  ```lua
+  print(1+3)
+  print(5/10)
+  print(2^10)
+  
+  local = 1247
+  print(num%2)
+  print((num%2)==1) 
+  ```
+
+- 关系运算符，返回true或者false
+
+  ```lua
+  1、 == 等于，检测两端值是否相等
+  2、 ~= 不等于
+  3、 > 大于
+  4、 < 小于
+  5、 >= 大于等于
+  6、 <= 小于等于
+  
+  注意： table、userdata和函数进行判断是是判断引用地址是否相等
+  local a = {x=1,y=0}
+  local b = {x=1,y=0}
+  
+  if a == b then
+  	print("a==b")
+  else
+  	print("a~=b")
+  end
+  ```
+
+- 逻辑运算符
+
+  ```lua
+  and 逻辑与运算符 （A and B) A 真则B，A假则A
+  or  逻辑或运算符 （A or B） A 真则A，A假则B
+  not 逻辑非运算符 取反
+  
+  local c = nil
+  local d = 0
+  local e = 100
+  
+  print(c and d)  -- nil
+  print(c and e)  -- nil
+  print(d and e)   -- 100
+  
+  print(c or d) -- 0
+  print(c or e) -- 100
+  ```
+
+
+
+#### lua控制结构
+
+- 条件 -控制结构：if-else; 是我们熟知的一种控制结构，lua跟其他语言一样，提供了if-else
+
+  - 单个if分支型
+
+    ```lua
+    x = 20
+    if x > 0 then
+    	print("ok")
+    end
+    
+    if (x > 0) then
+        print(“也 ok”)
+    end
+    ```
+
+  - 两个条件分支
+
+    ```lua
+    x = 10
+    
+    if x >0 then
+    	print("分支1")
+    else
+    	print("分支2")
+    end
+    ```
+
+  - 多个条件分支
+
+    ```lua
+    score = 90
+    
+    if score == 100 then
+    	print("分支1")
+    elseif score >= 60 then 
+    	print("分支2")
+    -- 此处可添加多个elseif
+    else
+    	print("分支3")
+    end
+    ```
+
+  - 注意：elseif 是连在一起的，如果分开要注意以下状态
+
+    ```lua
+    score = 0
+    if score == 100 then
+    	print("分支1”)
+    elseif score >= 60 then
+    	print("分支2")
+    else
+    	if score > 0 then
+    		print("分支3“)
+    	else
+    		print("分支4")
+    	end
+    end
+    ```
+
+
+
+#### 循环语句
+
+​	lua和其他常见语言一样，提供了while控制语句，语法上也美哟特答的区别，但是没有提供 do-while型控制结构，但是提供了功能先当的repeat。
+
+​	while 型控制结构语句语法如下，当表达式值为假（即false/nil）时循环结束，也可以使用break语句跳出循环
+
+- while语法
+
+  ```lua
+  while 表达式 do
+  	--body
+  end
+  
+  --实例：求1+2+3..+5的和
+  x = 1
+  sum = 0
+  
+  while x<=5 do
+  	sum = sum + x
+  	x = x +1
+  end
+  print(sum)
+  ```
+
+  值得一提的是：lua并没有提供continue这样的控制语句用来立即进入下一个循环迭代，因此我们需要仔细安排循环里的分支，以免这样的需求（没有continue，但有break）
+
+  ```lua
+  --实例： 遍历table，查找值为11的下标
+  
+  local t = {1,4,5,6,98,11,21,15}
+  local i = 1
+  
+  while i < #t do
+  	if 11 == t[i] then
+  		print("index["..i.."] have right value[11]")
+  		break
+  	end
+  	i = i +1
+  end
+  ```
+
+- repeat 控制结构
+
+  lua中的repeat控制结构类似于其他语言中的 do-while，但是控制方式是刚好相反的，简单说执行repeat循环体后，直到until的条件为真时才结束，而其他语言的do-while则是当条件为假时才结束
+
+  ```lua
+  -- 以下代码会死循环
+  x = 10
+  
+  repeat
+  	print(x)
+  until false  -- 条件为真则结束循环
+  --该代码会导致死循环，因为until的条件一直为假，循环不为真不结束（repeat也可使用break跳出）。
+  
+  
+  repeat
+      print(x)
+      x = x -1
+  until x < 0
+  ```
+
+  注意点：
+
+  - repeat until 控制结构，它至少会执行一遍； while控制的更精确些
+
+- for循环控制
+
+  for语句有两种形式： 数字 for  和 范型 for
+
+  - 数字型  for  的语法如下：
+
+    ```lua
+    for  var = begin, finish, step do 
+    	-- body
+    end
+    
+    -- 关于数字 for 需要注意几点：
+    	--1、var 从begin变化到finish，每次变化都已step作为步长递增 var
+    	--2、begin、finish、step 三个表达式只会在循环开始时执行一次
+    	--3、step 可选，默认为1
+    	--4、控制var的作用域仅在for循环内部，需要在外面控制，则需将赋值给一个新变量
+    	--5、循环过程中不要改变循环变量的值
+    	
+    for i=1,5 do
+    	print(i)
+    end
+    
+    for i=1,10,2 do
+    	print(i)
+    end
+    
+    for i=10,1,-2 do
+    	print(i)
+    end
+    
+    -- 无穷大
+    for i=1, math.huge do
+        if(0.3*i^3 - 20*i^2 -500 >= 0) then
+            print(i)
+            break
+        end
+    end
+    ```
+
+- for 范型
+
+  对lua的table类型的遍历；范型for循环通过一个迭代器（iterator）函数来遍历所有值：
+
+  ```lua
+  -- 打印数组所有值
+  local a = {"a","b","c"}
+  
+  for i, v in ipairs(a) do
+  	print(i, v)
+  end
+  
+  --lua的基本库提供了ipairs，这是一个用于遍历数组迭代器的函数，每次循环中，i会被赋值一个索引值，同时v会获得对于的元素值
+  
+  local a = {"a","b","c",k="k"}
+  
+  for i, v in ipairs(a) do
+  	print(i, v)
+  end
+  
+  [[  -- 道理很简单ipairs函数只遍历数组，字典的值是不会被遍历的
+  1	a
+  2	b
+  3	c
+  ]]
+  ```
+
+  下面是另一个类型的实例，演示了如何遍历一个table中的**所有key**
+
+  ```lua
+  -- 打印table中的所有key
+  local t = {"a","b","c",k="k"}
+  
+  for k,v in pairs(t) do  -- ipairs() table中的数组，pairs() table中的所有
+  	print(k)
+  end
+  
+  [[
+  1	a
+  2	b
+  3	c
+  k	k
+  ]]
+  ```
+
+- 案例：假设有一个table，它的内容是一周的每天的名称，现在要将一个名称转换成它在一周的位置
+
+  ```lua
+  local days = {
+      "sunday","monday","tuesday","wednesday","thursday","friday","saturday"
+  }
+  revDays = {}
+  
+  -- 实现数组逆转
+  for i, v in ipairs(days) do
+  	revDays[v] = i
+  end
+  
+  for k, v in pairs(revDays) do
+  	print(k.."="..v)
+  end
+  ```
+
+
+
+#### break、return关键字
+
+- break
+
+  语句break用于终止while、repeat和for循环，跳出循环
+
+  ```lua
+  -- 计算最小x， 使得从1到x的所有数相加大于100
+  sum = 0
+  i = 1
+  while true do
+  	sum = sum  + i
+  	if sum > 100 then
+  		break
+  	end
+  	i = i + 1
+  end
+  print("the result is"..i)
+  ```
+
+- return 主要用于从函数中返回结果，或者用于简单的结束一个函数的执行
+
+  ```lua
+  local function add(x, y)
+  	return x+y
+  end
+  ```
+
+
+
+#### lua正则表达式
+
+​	与其他脚本语言不同的是，lua并不使用POSIX规范的正则表达式（regexp）来进行模式匹配，主要原有出于程序大小方面考虑： 实现一个典型的符合POSIX标准的regexp大概需要4000行代码，这比整个lua标准库加在一起都大，权衡之下，lua中的模式匹配的实现只有500行代码，当然意味着不可能实现POSIX所规范的所有功能，然而，lua中匹配功能很强大，并且包含了一些使用标准POSIX模式不容易匹配的功能。
+
+- lua正则中的特殊字符（元字符）包括如下几种：()   .  % + - * ? [] ^ $
+
+  |  元字符   | 描述                                                         | 表达式实例                                | 匹配的字符串           |
+  | :-------: | ------------------------------------------------------------ | ----------------------------------------- | ---------------------- |
+  | 普通字符  | 除去特殊的字符（（）. % ..)                                  | kana                                      | kana                   |
+  |     .     | 匹配任意字符                                                 | ka.a                                      | kana                   |
+  |     %     | 转义字符，改变后一个字符的原有意思   当后面接的是特殊字符时，将还原有特殊字符的原意。%和一些特殊字符组合构成lua预定义字符集。%和数字1~9组合表示之前捕获的分组 | K%wna %%na%% (a)na%1(第三位是前面1的分组) | Kana %na% ana          |
+  |   [...]   | 字符集（字符类）。匹配一个包含于集合内的字符。[...] 中的特殊字符将还原其原意，但有下面几种特殊情况：1、%], %-, %……作为整体表示字符']','-','^' ;    2、 预定义字符集作为以一个整体表示对应的字符集 | [a%%]na       [a%]na        [%%a]na       | %na       %na      wna |
+  | [...-...] | 表示ascii码在它一个字符到它后一个字符之间的所有字符          | [a-z]a                                    | na                     |
+  |  [^...]   | b不在...中的字符集合                                         | [^0-9]na                                  |                        |
+
+  ```lua
+  test = "n2,nn45,n678,n34n"
+  print(string.gsub(test,"n?[0-9]+",""))  -- ,n,,n	4
+  ```
 
   
 
+- 重复字符，量词
+
+  | 重复（数量词） |                             |          |       |
+  | -------------- | --------------------------- | -------- | ----- |
+  | *              | 表示前一个字符出现0次或多次 | [0-9]*   | 2020  |
+  | +              | 表示一个字符出现至少一次    | n+[0-9]+ | n2009 |
+  | -              | 匹配前一个字符0次或多次     |          |       |
+  | ？             | 表示前一个字符出现0次或1次  | n?[0-9]+ | 2009  |
+
+  注意：
+
+  - 元字符+和*是贪婪的，总是进行最长的匹配，而-则是吝啬的，总是最短匹配
+
+    ```lua
+    例子：
+    local test = "<font>a</font><font>b</font>"
+    print(string.gsub(test,"<font>.+</font>", "6"))  -- 6  1  这是会将所有的字符替换为6，从开始的<font>到最后的</font>
+    
+    local test = "<font>a</font><font>b</font>"
+    print(string.gsub(test,"<font>.-</font>", "6"))  -- 66  2  匹配到两次，两次替换
+    
+    ```
+
+
+
+- 预定义字符集
+
+  | 预定义字符集 |                                 |          |       |
+  | ------------ | ------------------------------- | -------- | ----- |
+  | %s           | 空白字符集（比如空格,多个空格） | an[%s]?9 | an 9  |
+  | %p           | 标点符号                        | an[%p]9  | an.9  |
+  | %c           | 控制字符，例如\n                |          |       |
+  | %w           | 字母数字[a-Z0-9]                | [%w]+    | kana9 |
+  | %a           | 字母                            |          |       |
+  | %u           | 大写字母                        |          |       |
+  | %l           | 小写字母                        |          |       |
+  | %d           | 数字                            |          |       |
+  | %x           | 16进制数                        |          |       |
+
+
+
+- 分组
+
+  (...)   表达式中用小括号包围的字符串为一个分组，分组从左到右（以左括号的位置），组序号从1开始递增
+
+  ```lua
+  local test1 = "123,234 again1 123,234,test"
+  print(string.gsub(test1,"([%d]+),([%d]+) again1 %1,%2","ok"))  -- ok,test  1
+  ```
+
+
+
+- 边界符号
+  - ^ ：匹配字符开头 ，如： ^(%a)%w*    abc123
+  - $:   匹配字符串结尾 ，如： %w*(%d)$  abc123
